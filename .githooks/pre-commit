@@ -3,11 +3,19 @@
 #   1. check-private  -- no private path, host, name or code leaves in a commit;
 #   2. every .py compiles and every .sh parses;
 #   3. every memory guard is proven again on its fixtures (control green, mutants red);
-#   4. the revolving door of the map (guards/door-guard.sh).
+#   4. the revolving door of the map (guards/door-guard.sh);
+#   5. the tests of lite/ (the macOS port).
 # Enable once per clone:  git config core.hooksPath .githooks
 set -uo pipefail
 ROOT="$(git rev-parse --show-toplevel)" || exit 2
 cd "$ROOT" || exit 2
+# macOS: the guards expect GNU userland and bash 4+. brew install bash coreutils gawk flock
+if [ "$(uname)" = Darwin ]; then
+  for p in /opt/homebrew /usr/local; do
+    [ -d "$p/opt/coreutils/libexec/gnubin" ] && PATH="$p/opt/gawk/libexec/gnubin:$p/opt/coreutils/libexec/gnubin:$p/bin:$PATH"
+  done
+  command -v tac >/dev/null || { echo "✗ macOS: run brew install bash coreutils gawk flock"; exit 2; }
+fi
 rc=0
 python3 guards/check-private.py || rc=1
 bad=0
@@ -21,4 +29,6 @@ done < <(git ls-files -co --exclude-standard)
 bash guards/prove-fixture.sh --todas || rc=1
 #   4. the revolving door: the resident map stays inside its slice budget (tree + settings.example.json, no history; ~20 s)
 bash guards/door-guard.sh || rc=1
+if out=$(python3 -m unittest discover -s lite 2>&1); then echo "✓ lite: tests pass"
+else echo "$out" | tail -20; echo "✗ lite: tests failed"; rc=1; fi
 exit "$rc"

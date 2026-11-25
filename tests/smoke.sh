@@ -13,7 +13,7 @@
 # Verdict: one line per check, then `N of M` and rc 0 only if every check passed.
 set -uo pipefail
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
+TMP="$(cd "$(mktemp -d)" && pwd -P)"; trap 'rm -rf "$TMP"' EXIT   # physical path: on macOS /var is a link to /private/var
 export HOME="$TMP/home"; mkdir -p "$HOME/.claude" "$TMP/work"
 R="$TMP/hipocampo"; mkdir -p "$R"
 unset HIPO_REPO HIPO_CLAUDE_DIR HIPO_WORKDIR HIPO_PROJECT_DIR HIPO_MEMORY_DIR HIPO_SETTINGS HIPO_STATE_DIR HIPO_LOG_DIR MEM_DIR
